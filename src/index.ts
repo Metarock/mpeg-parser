@@ -6,9 +6,10 @@ const main = async () => {
   // Array to store pids
   const pids: number[] = [];
 
-  //current byte in the stream
+  //current byte offest in the stream
+  let currentbyteOffSet = 0;
   //index of packet being read
-
+  let curerntPacketIndex = 0;
   // native standard input stream
   const stdin = process.stdin;
 
@@ -28,6 +29,13 @@ const main = async () => {
         const packetBuffer = chunk.subarray(offset, offset + PACKETSIZE);
 
         console.log(packetBuffer);
+
+        if (packetBuffer[0] !== SYNCBYTE) {
+          console.error(
+            `Error: No sync byte present in packet ${curerntPacketIndex}, offset ${currentbyteOffSet}`,
+          );
+          process.exit(1);
+        }
       }
     }
   });
