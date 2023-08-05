@@ -8,20 +8,16 @@ const hasPid = (pids: number[], pid: number) => pids.includes(pid);
 const handlePacket = (packetBuffer: Buffer) => ((packetBuffer[1] & 0x1f) << 8) | packetBuffer[2];
 
 // handles the chunk of data and updates the array
-const handleChunk = (chunk: Buffer, pids: number[]) => {
-  const packetBuffer = Math.floor(chunk.length / PACKETSIZE);
+const handleChunk = (chunk: Buffer, pids: number[], packetIndex: number) => {
+  const numPackets = Math.floor(chunk.length / PACKETSIZE);
 
-  for (let curerntPacketIndex = 0; curerntPacketIndex < packetBuffer; curerntPacketIndex++) {
-    const packetBuffer = chunk.subarray(
-      curerntPacketIndex * PACKETSIZE,
-      (curerntPacketIndex + 1) * PACKETSIZE,
-    );
+  for (let index = 0; index < numPackets; index++) {
+    const currentIndex = packetIndex + index;
+    const byteOffset = currentIndex * PACKETSIZE;
+
+    const packetBuffer = chunk.subarray(index * PACKETSIZE, (index + 1) * PACKETSIZE);
     if (packetBuffer[0] !== SYNCBYTE) {
-      console.error(
-        `Error: No sync byte present in packet ${curerntPacketIndex}, offset ${
-          curerntPacketIndex * PACKETSIZE
-        }`,
-      );
+      console.error(`Error: No sync byte present in packet ${currentIndex}, offset ${byteOffset}`);
       process.exit(1);
     }
     const pid = handlePacket(packetBuffer);
@@ -37,14 +33,18 @@ const main = async () => {
   // native standard input stream
   const stdin = process.stdin;
 
+  let packetIndex = 0;
+
   stdin.on('readable', () => {
     let chunk: Buffer; //array of bytes
 
-    //read data
-
     // this is basically while its true; almost infiite loop. Refactor later on
     while ((chunk = stdin.read(PACKETSIZE)) !== null) {
-      handleChunk(chunk, pids);
+      handleChunk(chunk, pids, packetIndex);
+
+      // number of packets that can fit in a chunk
+      const numPackets = Math.floor(chunk.length / PACKETSIZE);
+      packetIndex += numPackets;
     }
   });
 
