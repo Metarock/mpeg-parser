@@ -2,14 +2,38 @@ const PACKETSIZE = 188; // size of bytes for each MPEG TS packet
 const SYNCBYTE = 0x47; //expected beginning val of sync byte
 const PIDMASK = 0x1fff; //Bitmask to extract the PID
 
+const hasPid = (pids: number[], pid: number) => pids.includes(pid);
+
+// handles the packet and extract PID
+const handlePacket = (packetBuffer: Buffer) => ((packetBuffer[1] & 0x1f) << 8) | packetBuffer[2];
+
+// handles the chunk of data and updates the array
+const handleChunk = (chunk: Buffer, pids: number[]) => {
+  const packetBuffer = Math.floor(chunk.length / PACKETSIZE);
+
+  for (let curerntPacketIndex = 0; curerntPacketIndex < packetBuffer; curerntPacketIndex++) {
+    const packetBuffer = chunk.subarray(
+      curerntPacketIndex * PACKETSIZE,
+      (curerntPacketIndex + 1) * PACKETSIZE,
+    );
+    if (packetBuffer[0] !== SYNCBYTE) {
+      console.error(
+        `Error: No sync byte present in packet ${curerntPacketIndex}, offset ${
+          curerntPacketIndex * PACKETSIZE
+        }`,
+      );
+      process.exit(1);
+    }
+    const pid = handlePacket(packetBuffer);
+    if (!hasPid(pids, pid)) {
+      pids.push(pid);
+    }
+  }
+};
 const main = async () => {
   // Array to store pids
   const pids: number[] = [];
 
-  //current byte offest in the stream
-  let currentbyteOffSet = 0;
-  //index of packet being read
-  let curerntPacketIndex = 0;
   // native standard input stream
   const stdin = process.stdin;
 
@@ -17,36 +41,10 @@ const main = async () => {
     let chunk: Buffer; //array of bytes
 
     //read data
-    console.log((chunk = stdin.read(PACKETSIZE)) !== null);
 
     // this is basically while its true; almost infiite loop. Refactor later on
     while ((chunk = stdin.read(PACKETSIZE)) !== null) {
-      // current number of bytes in current chunk
-      const numberOfBytes = chunk.length;
-
-      // loop through it
-      for (let offset = 0; offset + PACKETSIZE <= numberOfBytes; offset += PACKETSIZE) {
-        const packetBuffer = chunk.subarray(offset, offset + PACKETSIZE);
-
-        console.log(packetBuffer);
-
-        if (packetBuffer[0] !== SYNCBYTE) {
-          console.error(
-            `Error: No sync byte present in packet ${curerntPacketIndex}, offset ${currentbyteOffSet}`,
-          );
-          process.exit(1);
-        }
-
-        // Extract and calculate the PID from the packet header
-        const pid = ((packetBuffer[1] & 0x1f) << 8) | packetBuffer[2];
-
-        if (!pids.includes(pid)) {
-          pids.push(pid);
-        }
-
-        currentbyteOffSet += PACKETSIZE;
-        curerntPacketIndex++;
-      }
+      handleChunk(chunk, pids);
     }
   });
 
