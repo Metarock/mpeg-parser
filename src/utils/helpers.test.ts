@@ -1,5 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import { handleChunk } from './helpers';
+import { handleChunk, handleExtractPid, hasPid } from './helpers';
+
+describe('hasPid Function', () => {
+  it('should return true if pid exists in the array', () => {
+    const pids = [100, 200, 300];
+    const pid = 200;
+    const result = hasPid(pids, pid);
+    expect(result).toBe(true);
+  });
+
+  it('should return false if pid does not exist in the array', () => {
+    const pids = [100, 200, 300];
+    const pid = 400;
+    const result = hasPid(pids, pid);
+    expect(result).toBe(false);
+  });
+});
+
+describe('handleExtractPid Function', () => {
+  it('should extract and calculate PID correctly', () => {
+    const packetBuffer = Buffer.from([0x47, 0x11, 0x22, 0x33]);
+    const pid = handleExtractPid(packetBuffer);
+
+    expect(pid).toBe(4386);
+  });
+});
 
 describe('Testing handleChunk function', async () => {
   // Mock valid and invalid mock data
