@@ -3,7 +3,7 @@ import { PACKETSIZE, SYNCBYTE } from './constants';
 export const hasPid = (pids: number[], pid: number) => pids.includes(pid);
 
 // handles the packet and extract PID
-export const handlePacket = (packetBuffer: Buffer) =>
+export const handleExtractPid = (packetBuffer: Buffer) =>
   ((packetBuffer[1] & 0x1f) << 8) | packetBuffer[2];
 
 // handles the chunk of data and updates the array
@@ -19,7 +19,7 @@ export const handleChunk = (chunk: Buffer, pids: number[], packetIndex: number) 
       console.error(`Error: No sync byte present in packet ${currentIndex}, offset ${byteOffset}`);
       process.exit(1);
     }
-    const pid = handlePacket(packetBuffer);
+    const pid = handleExtractPid(packetBuffer);
     if (!hasPid(pids, pid)) {
       pids.push(pid);
     }
