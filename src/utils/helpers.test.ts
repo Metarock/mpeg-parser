@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { handleChunk, handleExtractPid, hasPid } from './helpers';
 
 describe('hasPid Function', () => {
@@ -37,12 +37,18 @@ describe('Testing handleChunk function', async () => {
     0x46, 0x10, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x47,
     0x10, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
   ]);
+
   it('should handle errors', () => {
     const packetIndex = 0;
     const pids = [0x1122];
 
-    const proccessedChunked = handleChunk(invalidMockInputData, pids, packetIndex);
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation((number) => {
+      throw new Error('process.exit: ' + number);
+    });
+    handleChunk(invalidMockInputData, pids, packetIndex);
 
     expect(pids).toEqual([0x1122]); //remain unchanged
+    console.log(mockExit.mock.calls);
+    expect(mockExit).toHaveBeenCalledWith(1);
   });
 });
