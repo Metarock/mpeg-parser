@@ -28,5 +28,5 @@
     "baseUrl": "."
   },
   "exclude": ["test_failure.ts", "test_success.ts", "node_modules"],
-  "include": ["./src/**/*.tsx", "./src/**/*.ts"]
+  "include": ["./src/**/*.ts"]
 }
