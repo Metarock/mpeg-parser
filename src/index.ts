@@ -36,7 +36,27 @@ const main = async () => {
           );
           process.exit(1);
         }
+
+        // Extract and calculate the PID from the packet header
+        const pid = ((packetBuffer[1] & 0x1f) << 8) | packetBuffer[2];
+
+        if (!pids.includes(pid)) {
+          pids.push(pid);
+        }
+
+        currentbyteOffSet += PACKETSIZE;
+        curerntPacketIndex++;
       }
+    }
+  });
+
+  stdin.on('end', () => {
+    if (pids.length > 0) {
+      const sortedPids = pids.sort((a, b) => a - b);
+
+      sortedPids.map((pid) => {
+        console.log(`0x${pid.toString(16).toUpperCase()}`);
+      });
     }
   });
 };
